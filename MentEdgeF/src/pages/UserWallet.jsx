@@ -40,21 +40,22 @@ useEffect(() => {
 }, []);
 
 
-useEffect(() => {
-  const fetchTransactions = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:8080/userwallet/transactions/${userId}`
-      );
-      const data = await res.json();
-      setTransactions(data);
-    } catch (err) {
-      console.error("Transaction fetch error", err);
-    }
-  };
+const fetchTransactions = async () => {
+  try {
+    const res = await fetch(
+      `http://localhost:8080/userwallet/transactions/${userId}`
+    );
+    const data = await res.json();
+    setTransactions(data);
+  } catch (err) {
+    console.error("Transaction fetch error", err);
+  }
+};
 
+useEffect(() => {
   fetchTransactions();
 }, []);
+
 
 
 
@@ -91,13 +92,61 @@ useEffect(() => {
     }
   };
 
+  
+  const payWithRazorpay = async () => {
+  if (!walletData) return;
 
-  const saveTransaction = async () => {
+  try {
+    // 1️⃣ Create order from backend
+    const orderRes = await fetch(
+      `http://localhost:8080/api/payments/create-order?amount=${walletData.amount}&currency=INR`,
+      { method: "POST" }
+    );
+
+    const order = await orderRes.json();
+
+    // 2️⃣ Razorpay options
+    const options = {
+      key: "rzp_test_RvvbBfYiABmdWw", // test key
+      amount: order.amount,
+      currency: order.currency,
+      name: "MentEdge",
+      description: "Internship Payment",
+      order_id: order.id,
+
+      handler: async function (response) {
+        alert(
+          "Payment Successful! Payment ID: " +
+            response.razorpay_payment_id
+        );
+
+        // 3️⃣ Save transaction after success
+        await saveTransaction(response.razorpay_payment_id);
+
+        // 4️⃣ Reload transaction history
+        fetchTransactions();
+      },
+
+      theme: {
+        color: "#22c55e",
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  } catch (err) {
+    console.error("Razorpay error", err);
+  }
+};
+
+
+
+  const saveTransaction = async (paymentId) => {
   const payload = {
-    transactionId: `TXN${Date.now()}`,
+    transactionId: paymentId, // Razorpay payment ID
     userId: userId,
     mentorId: walletData.mentorId,
-    name: "Ram Joshi", // or logged-in user
+    name: "Ram Joshi",
     internshipId: internshipId,
     type: "internship",
     amount: walletData.amount,
@@ -112,6 +161,7 @@ useEffect(() => {
     body: JSON.stringify(payload),
   });
 };
+
 
   const payUPI = async () => {
   if (!upiName) {
@@ -220,54 +270,12 @@ shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
 
 
             {/* Pay Buttons */}
-            {/* Pay Using UPI App */}
-            <button
-            onClick={() => setActivePayment(activePayment === "upi" ? "" : "upi")}
-            className={`mb-3 w-full py-4 text-base sm:text-[15px] rounded-xl border font-bold
-                ${activePayment === "upi"
-                ? "bg-green-500 text-[#020617] border-green-500"
-                : "text-green-500 border-green-500 hover:bg-green-500 hover:text-[#020617]"
-                }`}
-            >
-            Pay Using UPI App
-            </button>
-
-            {/* UPI Apps List */}
-            {activePayment === "upi" && (
-            <div className="space-y-2 mb-3">
-                {["Google Pay", "PhonePe", "Paytm", "BHIM"].map((app) => (
-                <div
-                    key={app}
-                    onClick={() => openUPI(app)}
-                    className="bg-[#020617] border border-[#1e293b] p-3 rounded-xl text-center font-semibold cursor-pointer hover:bg-[#1e293b] hover:border-green-500"
-                >
-                    {app}
-                </div>
-                ))}
-            </div>
-            )}
-
-            {/* Pay Using QR Code */}
-            <button
-            onClick={() => setActivePayment(activePayment === "qr" ? "" : "qr")}
-            className={`w-full py-4 text-base sm:text-[15px] rounded-xl border font-bold
-                ${activePayment === "qr"
-                ? "bg-green-500 text-[#020617] border-green-500"
-                : "text-green-500 border-green-500 hover:bg-green-500 hover:text-[#020617]"
-                }`}
-            >
-            Pay Using QR Code
-            </button>
-
-            {/* QR Code */}
-            {activePayment === "qr" && (
-            <div className="mt-5 text-center">
-                <p className="text-xs text-slate-400 mb-3">
-                Scan this QR using any UPI app
-                </p>
-                <img src={qrUrl} className="w-[200px] mx-auto bg-white p-3 rounded-xl" />
-            </div>
-            )}
+           <button
+  onClick={payWithRazorpay}
+  className="w-full mt-4 py-4 rounded-xl bg-green-500 text-[#020617] font-bold text-lg hover:bg-green-600"
+>
+  Pay Now
+</button>
 
 
             <div className="mt-4 text-xs text-slate-400 text-center">

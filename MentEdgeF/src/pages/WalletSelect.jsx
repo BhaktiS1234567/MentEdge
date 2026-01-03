@@ -18,14 +18,14 @@ export default function WalletSelect() {
           
           <button
             onClick={() => navigate("/mentor-wallet")}
-            className="py-3 rounded-xl bg-sky-600 hover:bg-sky-700 transition font-medium"
+            className="py-3 rounded-xl bg-sky-600 hover:bg-slate-600 transition font-medium"
           >
             Mentor Wallet
           </button>
 
           <button
             onClick={() => navigate("/user-wallet")}
-            className="py-3 rounded-xl bg-slate-700 hover:bg-slate-600 transition font-medium"
+            className="py-3 rounded-xl bg-sky-600 hover:bg-slate-600 transition font-medium"
           >
             User Wallet
           </button>
